@@ -12,6 +12,9 @@
 # bld
 bld/
 
+# practice notebooks
+*.ipynb
+
 # latex
 *.aux
 *.bbl

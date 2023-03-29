@@ -1,6 +1,11 @@
 """Utilities used in various parts of the project."""
 
 import yaml
+import pickle
+
+def to_pkl(dictionary, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(dictionary, f)
 
 
 def read_yaml(path):
