@@ -3,16 +3,16 @@
 import pandas as pd
 import pytask
 
-from het_agents.analysis.model import fit_logit_model, load_model
-from het_agents.analysis.predict import predict_prob_by_age
-from het_agents.config import BLD, GROUPS, SRC
-from het_agents.utilities import read_yaml
+from heterogeneous_agents.analysis.model import fit_logit_model, load_model
+from heterogeneous_agents.analysis.predict import predict_prob_by_age
+from heterogeneous_agents.config import BLD, GROUPS, SRC
+from heterogeneous_agents.utilities import read_yaml
 
 
 @pytask.mark.depends_on(
     {
-        "scripts": ["model.py", "predict.py"],
-        "data": BLD / "python" / "data" / "data_clean.csv",
+        "scripts": ["solve_steady.py", "predict.py"],
+        "data": BLD / "python" / "data" / f"econ_data_{model}_mkt.pkl",
         "data_info": SRC / "data_management" / "data_info.yaml",
     },
 )
@@ -26,6 +26,7 @@ def task_fit_model_python(depends_on, produces):
 
 
 for group in GROUPS:
+
     kwargs = {
         "group": group,
         "produces": BLD / "python" / "predictions" / f"{group}.csv",
