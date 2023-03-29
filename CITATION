@@ -1,0 +1,6 @@
+@Unpublished{het_agents2023,
+    Title  = {Solving heterogeneous agents models, with or without incomplete markets},
+    Author = {Jose Lores Diz},
+    Year   = {2023},
+    Url    = {https://github.com/JoseLores/het_agents}
+}
