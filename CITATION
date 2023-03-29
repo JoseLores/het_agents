@@ -1,0 +1,6 @@
+@Unpublished{het_agents2023,
+    Title  = {Solving for the steady state of heterogeneous agents models with standard and incomplete markets},
+    Author = {Jose Lores Diz},
+    Year   = {2023},
+    Url    = {https://github.com/JoseLores/het_agents}
+}
