@@ -85,7 +85,7 @@ def benchmark_algorithms_time(
         economic_params (dict): A dictionary containing economic parameters.
         numerical_params (dict): A dictionary containing numerical parameters.
 
-    Returns:
+    Returns: 
         dict: A dictionary containing the average runtime of the benchmark for each solver.
 
     """

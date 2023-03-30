@@ -32,7 +32,7 @@ for model in MODELS:
             steady_state_results["aggregate_capital"],
             economic_params,
             numerical_params,
-        )
+        ) 
 
         (
             data_for_plots["demand_curve"],
