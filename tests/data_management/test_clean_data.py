@@ -58,27 +58,27 @@ def test_get_tax_rate(economic_params):
     assert np.isclose(tax_rate, 0)
 
 
-def test_get_income_grid(numerical_params, economic_params):
+def test_get_state_grid(numerical_params, economic_params):
     n_points_z = numerical_params["n_points_income_grid"]
     unemp_benefit = economic_params["unemp_benefit"]
     tax_rate = 0
     productivity = economic_params["productivity"]
 
-    income_grid = get_income_grid(n_points_z, unemp_benefit, tax_rate, productivity)
+    state_grid = get_state_grid(n_points_z, unemp_benefit, tax_rate, productivity)
 
     assert isinstance(
-        income_grid,
+        state_grid,
         np.ndarray,
     ), "The function should return a numpy array"
-    assert income_grid.shape == (
+    assert state_grid.shape == (
         n_points_z,
     ), "The shape of the income grid is incorrect"
     assert np.isclose(
-        income_grid[0],
+        state_grid[0],
         unemp_benefit * productivity,
     ), "The first element should be close to unemp_benefit * productivity"
     assert np.allclose(
-        income_grid[1:],
+        state_grid[1:],
         productivity * (1 - tax_rate),
     ), "The remaining elements should be close to productivity * (1 - tax_rate)"
 
@@ -116,14 +116,14 @@ def test_get_meshes(numerical_params, economic_params):
         numerical_params["min_value_capital_grid"],
     )
 
-    income_grid = get_income_grid(
+    state_grid = get_state_grid(
         numerical_params["n_points_income_grid"],
         economic_params["unemp_benefit"],
         economic_params["tax_rate"],
         economic_params["productivity"],
     )
 
-    capital_mesh, income_mesh = get_meshes(capital_grid, income_grid)
+    capital_mesh, state_mesh = get_meshes(capital_grid, state_grid)
 
     assert isinstance(
         capital_mesh,
@@ -134,13 +134,13 @@ def test_get_meshes(numerical_params, economic_params):
         numerical_params["n_points_income_grid"],
     ), "The shape of the capital_mesh is incorrect"
     assert isinstance(
-        income_mesh,
+        state_mesh,
         np.ndarray,
-    ), "The income_mesh should be a numpy array"
-    assert income_mesh.shape == (
+    ), "The state_mesh should be a numpy array"
+    assert state_mesh.shape == (
         numerical_params["n_points_capital_grid"],
         numerical_params["n_points_income_grid"],
-    ), "The shape of the income_mesh is incorrect"
+    ), "The shape of the state_mesh is incorrect"
 
 
 def test_produce_grids(numerical_params, economic_params):
@@ -161,10 +161,10 @@ def test_produce_grids(numerical_params, economic_params):
         "employed_share",
         "unemployed_share",
         "tax_rate",
-        "income_grid",
+        "state_grid",
         "capital_grid",
         "capital_mesh",
-        "income_mesh",
+        "state_mesh",
     ]
     for key in expected_keys:
         assert (

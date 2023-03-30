@@ -5,7 +5,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
-def excess_demand(capital):
+def excess_demand(capital, economic_params, numerical_params):
     """This function calculates the difference between the equilibrium capital demand
     and the given capital stock. The equilibrium capital demand is calculated using the
     function aiyagari() with inputs that depend on the given capital stock.
@@ -19,15 +19,15 @@ def excess_demand(capital):
 
     """
     eq_capital_demand, *_ = aiyagari(
-        rate(Capital),
-        wage(Capital),
+        rate(capital, economic_params, numerical_params),
+        wage(capital, economic_params, numerical_params),
         economic_params,
         numerical_params,
     )
     return eq_capital_demand - capital
 
 
-def capital_demand(Return_rate):
+def capital_demand(Return_rate, economic_params, numerical_params):
     """This function calculates the aggregate capital demand for a given interest rate
     (return rate). It uses the capital share of income and the depreciation rate to
     determine the factor by which the marginal product of capital needs to exceed the
@@ -59,81 +59,58 @@ def solve_steady_state(economic_params, numerical_params, algorithm="scipy_lbfgs
          Defaults to "scipy_lbfgsb".
 
     Returns:
-        K_star (float): The aggregate capital stock in the steady state.
-        saving_star (numpy.ndarray): A two-dimensional array with shape (n_points_capital_grid, n_points_income_grid)
-         containing the savings decisions for each combination of capital and income in the steady state.
-        marginal_k (numpy.ndarray): A one-dimensional array of length n_points_capital_grid representing
-         the marginal distribution of capital in the steady state.
-        StDist (numpy.ndarray): A one-dimensional array of length n_points_capital_grid times
-         n_points_income_grid representing the steady-state distribution of households.
-        Gamma (numpy.ndarray): A two-dimensional array with shape (n_points_capital_grid, n_points_income_grid)
-         representing the steady-state transition matrix for households.
-        c_star (numpy.ndarray): A one-dimensional array of length n_points_capital_grid times
-         n_points_income_grid containing the consumption decisions for each combination of capital
-          and income in the steady state.
+        steady_state (dict): A dictionary containing all relevant steady state results.
+            aggregate_capital (float): The aggregate capital stock in the steady state.
+            saving_policy (numpy.ndarray): A two-dimensional array with shape (n_points_capital_grid, n_points_income_grid)
+            containing the savings decisions for each combination of capital and income in the steady state.
+            marginal_capital (numpy.ndarray): A one-dimensional array of length n_points_capital_grid representing
+            the marginal distribution of capital in the steady state.
+            capital_distribution (numpy.ndarray): A one-dimensional array of length n_points_capital_grid times
+            n_points_income_grid representing the steady-state distribution of households.
+            transition_mat (numpy.ndarray): A two-dimensional array with shape (n_points_capital_grid, n_points_income_grid)
+            representing the steady-state transition matrix for households.
+            consumption_policy (numpy.ndarray): A one-dimensional array of length n_points_capital_grid times
+            n_points_income_grid containing the consumption decisions for each combination of capital
+            and income in the steady state.
 
     """
-
-    def rate(Capital):
-        """This subfunction calculates the interest rate as a function of capital, using
-        the Cobb-Douglas production function and the specified economic parameters.
-
-        Args:
-            Capital (float): The aggregate capital stock in the economy.
-
-        Returns:
-            float: The interest rate corresponding to the given level of capital.
-
-        """
-        return (
-            economic_params["alpha"]
-            * economic_params["aggregate_labor_sup"] ** (1 - economic_params["alpha"])
-            * Capital ** (economic_params["alpha"] - 1)
-            - economic_params["delta"]
-        )
-
-    def wage(Capital):
-        """This subfunction calculates the wage rate as a function of capital, using the
-        Cobb-Douglas production function and the specified economic parameters.
-
-        Args:
-            Capital (float): The aggregate capital stock in the economy.
-
-        Returns:
-            float: The wage rate corresponding to the given level of capital.
-
-        """
-        return (
-            (1 - economic_params["alpha"])
-            * economic_params["aggregate_labor_sup"] ** (-economic_params["alpha"])
-            * Capital ** (economic_params["alpha"])
-        )
-
-    # Solve for Rstar and Kstar
     res = em.minimize(
         criterion=excess_demand,
         params=4,
         algorithm=algorithm,
         lower_bounds=float(
-            capital_demand(0.052),
+            capital_demand(0.052, economic_params, numerical_params),
         ),  # recall incomplete markets -> solution will be a bound
         upper_bounds=float(
-            capital_demand(-0.01),
+            capital_demand(-0.01, economic_params, numerical_params),
         ),  # Effective Lower Bound for interest rates
+        criterion_kwargs={
+            "economic_params": economic_params,
+            "numerical_params": numerical_params,
+        },
     )
-    Kstar = res.params
+    aggregate_capital = res.params
 
-    Rate = rate(Kstar)
-    Wage = wage(Kstar)
+    Rate = rate(aggregate_capital, economic_params, numerical_params)
+    Wage = wage(aggregate_capital, economic_params, numerical_params)
     # Calculate other variables using K_Agg function
-    _, saving_star, marginal_k, StDist, Gamma, c_star = aiyagari(
+    _, saving_policy, marginal_capital, StDist, Gamma, consumption_policy = aiyagari(
         Rate,
         Wage,
         economic_params,
         numerical_params,
     )
 
-    return K_star, saving_star, marginal_k, StDist, Gamma, c_star
+    # save results
+    steady_state = {}
+    steady_state["aggregate_capital"] = aggregate_capital
+    steady_state["saving_policy"] = saving_policy
+    steady_state["marginal_capital"] = marginal_capital
+    steady_state["capital_distribution"] = StDist
+    steady_state["transition_mat"] = Gamma
+    steady_state["consumption_policy"] = consumption_policy
+
+    return steady_state
 
 
 def aiyagari(Rate, Wage, economic_params, numerical_params):
@@ -301,7 +278,11 @@ def young(kprime, economic_params, numerical_params):
 
 
 def endogenous_grid_method(
-    consumption_grid, Rate, Rateprime, economic_params, numerical_params,
+    consumption_grid,
+    Rate,
+    Rateprime,
+    economic_params,
+    numerical_params,
 ):
     """This function uses the Endogenous Grid Method (EGM) to solve for the consumption
     and savings decisions of households in a dynamic economic model with incomplete
@@ -329,13 +310,14 @@ def endogenous_grid_method(
     ).T
 
     # Calculate marginal utility from c'
-    mu = get_marginal_utility(consumption_grid)
+    mu = get_marginal_utility(consumption_grid, economic_params["gamma"])
 
     # Calculate expected marginal utility
     expected_mu = mu @ economic_params["transition_mat"].T
 
     Cstar = get_inverse_marginal_utility(
         economic_params["beta"] * Rateprime * expected_mu,
+        economic_params["gamma"],
     )
 
     Kstar = (
@@ -372,8 +354,45 @@ def endogenous_grid_method(
     return consumption_grid, Kprime
 
 
+def rate(capital, economic_params, numerical_params):
+    """This function calculates the interest rate as a function of capital, using the
+    Cobb-Douglas production function and the specified economic parameters.
+
+    Args:
+        Capital (float): The aggregate capital stock in the economy.
+
+    Returns:
+        float: The interest rate corresponding to the given level of capital.
+
+    """
+    return (
+        economic_params["alpha"]
+        * economic_params["aggregate_labor_sup"] ** (1 - economic_params["alpha"])
+        * capital ** (economic_params["alpha"] - 1)
+        - economic_params["delta"]
+    )
+
+
+def wage(capital, economic_params, numerical_params):
+    """This function calculates the wage rate as a function of capital, using the Cobb-
+    Douglas production function and the specified economic parameters.
+
+    Args:
+        Capital (float): The aggregate capital stock in the economy.
+
+    Returns:
+        float: The wage rate corresponding to the given level of capital.
+
+    """
+    return (
+        (1 - economic_params["alpha"])
+        * economic_params["aggregate_labor_sup"] ** (-economic_params["alpha"])
+        * capital ** (economic_params["alpha"])
+    )
+
+
 # Vectorized versions are faster than numba or jax. BUT with jax you can generalize it to any Utility F.
-def get_marginal_utility(c, gamma=economic_params["gamma"]):
+def get_marginal_utility(c, gamma):
     """This function calculates the marginal utility of consumption using the Constant
     Relative Risk Aversion (CRRA) utility function.
 
@@ -394,7 +413,7 @@ def get_marginal_utility(c, gamma=economic_params["gamma"]):
         return 1 / (c**gamma)
 
 
-def get_inverse_marginal_utility(mu, gamma=economic_params["gamma"]):
+def get_inverse_marginal_utility(mu, gamma):
     """This function calculates the inverse marginal utility of consumption using the
     Constant Relative Risk Aversion (CRRA) utility function.
 
@@ -413,3 +432,15 @@ def get_inverse_marginal_utility(mu, gamma=economic_params["gamma"]):
         return 1 / mu
     else:
         return (1 / mu) ** (1 / gamma)
+
+
+# def young_vectorized(kprime, economic_params, numerical_params):
+#     idk[kprime >= economic_params["capital_grid"][-1]] = (
+
+
+#     for zz in range(numerical_params["n_points_income_grid"]):
+#         Trans_array[np.arange(numerical_params["n_points_capital_grid"]), :, idk[:, zz], zz] = (
+#         Trans_array[np.arange(numerical_params["n_points_capital_grid"]), :, idk[:, zz] + 1, zz] = (
+
+#         Trans_array,
+#         ],

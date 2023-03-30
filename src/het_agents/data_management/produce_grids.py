@@ -18,7 +18,6 @@ def produce_grids(economic_params, numerical_params):
               and the required tax rate.
 
     """
-
     ergodic_dist = get_ergodic_dist(economic_params["transition_mat"])
 
     aggregate_labor_sup, employed_share, unemployed_share = get_aggregate_labor(
@@ -32,7 +31,7 @@ def produce_grids(economic_params, numerical_params):
         unemployed_share,
     )
 
-    income_grid = get_income_grid(
+    state_grid = get_state_grid(
         numerical_params["n_points_income_grid"],
         economic_params["unemp_benefit"],
         tax_rate,
@@ -45,19 +44,20 @@ def produce_grids(economic_params, numerical_params):
         numerical_params["min_value_capital_grid"],
     )
 
-    capital_mesh, income_mesh = get_meshes(capital_grid, income_grid)
+    capital_mesh, state_mesh = get_meshes(capital_grid, state_grid)
 
     # Add subfunctions to the economic_params dictionary
     economic_params["aggregate_labor_sup"] = aggregate_labor_sup
     economic_params["employed_share"] = employed_share
     economic_params["unemployed_share"] = unemployed_share
     economic_params["tax_rate"] = tax_rate
-    economic_params["income_grid"] = income_grid
+    economic_params["state_grid"] = state_grid
     economic_params["capital_grid"] = capital_grid
     economic_params["capital_mesh"] = capital_mesh
-    economic_params["income_mesh"] = income_mesh
+    economic_params["state_mesh"] = state_mesh
 
     return economic_params
+
 
 def get_ergodic_dist(transition_mat):
     """Calculate the ergodic distribution of a transition matrix.
@@ -76,6 +76,7 @@ def get_ergodic_dist(transition_mat):
     ergodic_dist = ergodic_dist_mat[0]
     return ergodic_dist
 
+
 def get_aggregate_labor(ergodic_dist, productivity):
     """Calculate the aggregate labor supply based on the ergodic distribution and
     productivity.
@@ -87,12 +88,13 @@ def get_aggregate_labor(ergodic_dist, productivity):
     Returns:
         tuple: Tuple containing the aggregate labor supply, employed share, and
         unemployed share.
-    """
 
+    """
     employed_share = ergodic_dist[1:].sum().round(5)
     aggregate_labor_sup = np.sum(employed_share) * productivity
     unemployed_share = 1 - employed_share
     return aggregate_labor_sup, employed_share, unemployed_share
+
 
 def get_tax_rate(unemp_benefit, employed_share, unemployed_share):
     """Calculate the tax rate required to finance unemployment insurance benefits.
@@ -111,7 +113,8 @@ def get_tax_rate(unemp_benefit, employed_share, unemployed_share):
     # tax rate to finance UIB.
     return unemp_benefit * unemployed_share / employed_share
 
-def get_income_grid(n_points_z, unemp_benefit, tax_rate, productivity):
+
+def get_state_grid(n_points_z, unemp_benefit, tax_rate, productivity):
     """Calculate the employment grid.
 
     Args:
@@ -125,10 +128,11 @@ def get_income_grid(n_points_z, unemp_benefit, tax_rate, productivity):
         numpy.ndarray: Array of employment grid points.
 
     """
-    income_grid = np.zeros(n_points_z)
-    income_grid[0] = unemp_benefit * productivity
-    income_grid[1:] = productivity * (1 - tax_rate)
-    return income_grid
+    state_grid = np.zeros(n_points_z)
+    state_grid[0] = unemp_benefit * productivity
+    state_grid[1:] = productivity * (1 - tax_rate)
+    return state_grid
+
 
 def get_k_grid(n_points_k, max_k, min_k):
     """Calculates the capital grid.
@@ -144,30 +148,31 @@ def get_k_grid(n_points_k, max_k, min_k):
     """
     return np.exp(np.linspace(0, np.log(max_k - min_k + 1), n_points_k)) - 1 + min_k
 
-def get_meshes(capital_grid, income_grid):
+
+def get_meshes(capital_grid, state_grid):
     """Creates two two-dimensional arrays representing a meshgrid of the given one-
     dimensional arrays.
 
     Args:
     - capital_grid: numpy array, one-dimensional array of capital grid values
-    - income_grid: numpy array, one-dimensional array of income grid values
+    - state_grid: numpy array, one-dimensional array of income grid values
 
     Returns:
-    
-    A tuple of two two-dimensional numpy arrays: (capital_mesh, income_mesh).
+    A tuple of two two-dimensional numpy arrays: (capital_mesh, state_mesh).
 
     - capital_mesh: numpy array, two-dimensional array of capital grid values
         paired with income grid values
-    - income_mesh: numpy array, two-dimensional array of income grid values
+    - state_mesh: numpy array, two-dimensional array of income grid values
         paired with capital grid values
 
     """
-    capital_mesh, income_mesh = np.meshgrid(
+    capital_mesh, state_mesh = np.meshgrid(
         capital_grid,
-        income_grid,
+        state_grid,
         indexing="ij",
     )
-    return capital_mesh, income_mesh
+    return capital_mesh, state_mesh
+
 
 def _is_irreducible(transition_mat):
     """Check if the Markov chain represented by the transition matrix is irreducible."""

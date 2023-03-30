@@ -9,4 +9,10 @@ PAPER_DIR = SRC.joinpath("..", "..", "paper").resolve()
 
 MODELS = ["standard", "incomplete"]
 
-__all__ = ["BLD", "SRC", "TEST_DIR", "MODELS"]
+ALGORITHMS = [
+    "scipy_trust_constr",
+    "scipy_lbfgsb",
+    "scipy_truncated_newton",
+]
+
+__all__ = ["BLD", "SRC", "TEST_DIR", "MODELS", "ALGORITHMS"]

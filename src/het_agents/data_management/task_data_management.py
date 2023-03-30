@@ -20,7 +20,7 @@ for model in MODELS:
         """Produce all grid, meshes and parameters needed for the model (Python
         version).
         """
-        numerical_params, economic_params = read_pkl("data")
+        numerical_params, economic_params = read_pkl(depends_on["data"])
 
         updated_economic_params = produce_grids(economic_params, numerical_params)
 

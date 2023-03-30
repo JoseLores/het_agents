@@ -1,46 +1,56 @@
 """Tasks running the core analyses."""
 
-import pandas as pd
 import pytask
 
-from het_agents.analysis.model import fit_logit_model, load_model
-from het_agents.analysis.predict import predict_prob_by_age
-from het_agents.config import BLD, GROUPS, SRC
-from het_agents.utilities import read_yaml
-
-
-@pytask.mark.depends_on(
-    {
-        "scripts": ["solve_steady.py", "predict.py"],
-        "data": BLD / "python" / "data" / f"econ_data_{model}_mkt.pkl",
-        "data_info": SRC / "data_management" / "data_info.yaml",
-    },
+from het_agents.analysis.model import (
+    benchmark_algorithms_iterations,
+    benchmark_algorithms_time,
+    capital_demand_supply,
 )
-@pytask.mark.produces(BLD / "python" / "models" / "model.pickle")
-def task_fit_model_python(depends_on, produces):
-    """Fit a logistic regression model (Python version)."""
-    data_info = read_yaml(depends_on["data_info"])
-    data = pd.read_csv(depends_on["data"])
-    model = fit_logit_model(data, data_info, model_type="linear")
-    model.save(produces)
+from het_agents.config import ALGORITHMS, BLD, MODELS
+from het_agents.solver_functions import rate, solve_steady_state
+from het_agents.utilities import read_pkl, to_pkl
 
-
-for group in GROUPS:
-    kwargs = {
-        "group": group,
-        "produces": BLD / "python" / "predictions" / f"{group}.csv",
-    }
+for model in MODELS:
 
     @pytask.mark.depends_on(
         {
-            "data": BLD / "python" / "data" / "data_clean.csv",
-            "model": BLD / "python" / "models" / "model.pickle",
+            "script": ["model.py"],
+            "data": BLD / "python" / "data" / f"econ_data_{model}_mkt.pkl",
         },
     )
-    @pytask.mark.task(id=group, kwargs=kwargs)
-    def task_predict_python(depends_on, group, produces):
-        """Predict based on the model estimates (Python version)."""
-        model = load_model(depends_on["model"])
-        data = pd.read_csv(depends_on["data"])
-        predicted_prob = predict_prob_by_age(data, model, group)
-        predicted_prob.to_csv(produces, index=False)
+    @pytask.mark.produces(BLD / "python" / "models" / f"results_{model}_mkt.pkl")
+    def task_get_model_results_python(depends_on, produces):
+        """Get quantitative data of the model (Python version)."""
+        data_for_plots = {}
+
+        numerical_params, economic_params = read_pkl(depends_on["data"])
+
+        steady_state_results = solve_steady_state(economic_params, numerical_params)
+
+        steady_state_results["interest_rate"] = rate(
+            steady_state_results["aggregate_capital"],
+            economic_params,
+            numerical_params,
+        )
+
+        (
+            data_for_plots["demand_curve"],
+            data_for_plots["supply_curve"],
+        ) = capital_demand_supply(economic_params, numerical_params)
+
+        data_for_plots[
+            "benchmarking_iterations_results"
+        ] = benchmark_algorithms_iterations(
+            ALGORITHMS,
+            economic_params,
+            numerical_params,
+        )
+
+        data_for_plots["benchmarking_time_results"] = benchmark_algorithms_time(
+            ALGORITHMS,
+            economic_params,
+            numerical_params,
+        )
+
+        to_pkl(steady_state_results, data_for_plots, produces)
