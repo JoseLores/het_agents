@@ -5,28 +5,29 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
-def ExcessDemand(Capital):
+def excess_demand(capital):
     """This function calculates the difference between the equilibrium capital demand
     and the given capital stock. The equilibrium capital demand is calculated using the
-    function Aiyagari() with inputs that depend on the given capital stock.
+    function aiyagari() with inputs that depend on the given capital stock.
 
     Args:
-    Capital (float): the given capital stock
+    capital (float): the given capital stock
 
     Returns:
-    Eq_Capital_demand - Capital (float): the difference between the equilibrium capital demand and the given capital stock.
+    eq_capital_demand - capital (float): the difference between the equilibrium capital
+    demand and the given capital stock.
 
     """
-    Eq_Capital_demand, *_ = Aiyagari(
+    eq_capital_demand, *_ = aiyagari(
         rate(Capital),
         wage(Capital),
         economic_params,
         numerical_params,
     )
-    return Eq_Capital_demand - Capital
+    return eq_capital_demand - capital
 
 
-def Kdemand(Return_rate):
+def capital_demand(Return_rate):
     """This function calculates the aggregate capital demand for a given interest rate
     (return rate). It uses the capital share of income and the depreciation rate to
     determine the factor by which the marginal product of capital needs to exceed the
@@ -45,7 +46,45 @@ def Kdemand(Return_rate):
 
 
 def solve_steady_state(economic_params, numerical_params, algorithm="scipy_lbfgsb"):
+    """This function solves the steady-state equilibrium of an Aiyagari model with
+    heterogeneous agents and incomplete markets, using the specified numerical
+    optimization algorithm.
+
+    Args:
+        economic_params (dict): A dictionary containing economic parameters such as the discount
+         factor, return rate, borrowing limit, and a transition matrix for employment states.
+        numerical_params (dict): A dictionary containing numerical parameters such as the number
+         of grid points for capital and employment.
+        algorithm (str, optional): A string indicating the numerical optimization algorithm to use.
+         Defaults to "scipy_lbfgsb".
+
+    Returns:
+        K_star (float): The aggregate capital stock in the steady state.
+        saving_star (numpy.ndarray): A two-dimensional array with shape (n_points_capital_grid, n_points_income_grid)
+         containing the savings decisions for each combination of capital and income in the steady state.
+        marginal_k (numpy.ndarray): A one-dimensional array of length n_points_capital_grid representing
+         the marginal distribution of capital in the steady state.
+        StDist (numpy.ndarray): A one-dimensional array of length n_points_capital_grid times
+         n_points_income_grid representing the steady-state distribution of households.
+        Gamma (numpy.ndarray): A two-dimensional array with shape (n_points_capital_grid, n_points_income_grid)
+         representing the steady-state transition matrix for households.
+        c_star (numpy.ndarray): A one-dimensional array of length n_points_capital_grid times
+         n_points_income_grid containing the consumption decisions for each combination of capital
+          and income in the steady state.
+
+    """
+
     def rate(Capital):
+        """This subfunction calculates the interest rate as a function of capital, using
+        the Cobb-Douglas production function and the specified economic parameters.
+
+        Args:
+            Capital (float): The aggregate capital stock in the economy.
+
+        Returns:
+            float: The interest rate corresponding to the given level of capital.
+
+        """
         return (
             economic_params["alpha"]
             * economic_params["aggregate_labor_sup"] ** (1 - economic_params["alpha"])
@@ -54,6 +93,16 @@ def solve_steady_state(economic_params, numerical_params, algorithm="scipy_lbfgs
         )
 
     def wage(Capital):
+        """This subfunction calculates the wage rate as a function of capital, using the
+        Cobb-Douglas production function and the specified economic parameters.
+
+        Args:
+            Capital (float): The aggregate capital stock in the economy.
+
+        Returns:
+            float: The wage rate corresponding to the given level of capital.
+
+        """
         return (
             (1 - economic_params["alpha"])
             * economic_params["aggregate_labor_sup"] ** (-economic_params["alpha"])
@@ -62,20 +111,22 @@ def solve_steady_state(economic_params, numerical_params, algorithm="scipy_lbfgs
 
     # Solve for Rstar and Kstar
     res = em.minimize(
-        criterion=ExcessDemand,
+        criterion=excess_demand,
         params=4,
         algorithm=algorithm,
         lower_bounds=float(
-            Kdemand(0.052),
+            capital_demand(0.052),
         ),  # recall incomplete markets -> solution will be a bound
-        upper_bounds=float(Kdemand(-0.01)),  # Effective Lower Bound for interest rates
+        upper_bounds=float(
+            capital_demand(-0.01),
+        ),  # Effective Lower Bound for interest rates
     )
     Kstar = res.params
 
     Rate = rate(Kstar)
     Wage = wage(Kstar)
     # Calculate other variables using K_Agg function
-    _, saving_star, marginal_k, StDist, Gamma, c_star = Aiyagari(
+    _, saving_star, marginal_k, StDist, Gamma, c_star = aiyagari(
         Rate,
         Wage,
         economic_params,
@@ -85,22 +136,36 @@ def solve_steady_state(economic_params, numerical_params, algorithm="scipy_lbfgs
     return K_star, saving_star, marginal_k, StDist, Gamma, c_star
 
 
-# Vectorized versions are faster than numba or jax. BUT with jax you can generalize it to any Utility F.
-def get_marginal_utility(c, gamma=economic_params["gamma"]):
-    if gamma == 1:
-        return 1 / c
-    else:
-        return 1 / (c**gamma)
+def aiyagari(Rate, Wage, economic_params, numerical_params):
+    """This function simulates the Aiyagari model of a dynamic economy with
+    heterogeneous agents and (in)complete markets, and returns the steady-state capital
+    stock and other relevant variables.
 
+    Args:
+        Rate (float): The interest rate in the economy.
+        Wage (float): The wage rate in the economy.
+        economic_params (dict): A dictionary containing economic parameters such as the discount
+         factor, return rate, borrowing limit, and a transition matrix for employment states.
+        numerical_params (dict): A dictionary containing numerical parameters such as the number
+         of grid points for capital and employment.
 
-def get_inverse_marginal_utility(mu, gamma=economic_params["gamma"]):
-    if gamma == 1:
-        return 1 / mu
-    else:
-        return (1 / mu) ** (1 / gamma)
+    Returns:
+        Capital_stock (float): The aggregate capital stock in the steady state.
+        kprime (numpy.ndarray): A two-dimensional array with shape
+        (n_points_capital_grid, n_points_income_grid) containing the savings
+        decisions for each combination of capital and income.
+        marginal_k (numpy.ndarray): A one-dimensional array of length n_points_capital_grid
+         representing the marginal distribution of capital in the steady state.
+        StDist (numpy.ndarray): A one-dimensional array of length n_points_capital_grid times
+         n_points_income_grid representing the steady-state distribution of households' savings.
+        Gamma (numpy.ndarray): A two-dimensional array with shape
+         (n_points_capital_grid, n_points_income_grid) representing the steady-state
+          transition matrix for households.
+        consumption_grid (numpy.ndarray): A one-dimensional array of length n_points_capital_grid
+        times n_points_income_grid containing the consumption decisions for each combination
+         of capital and income in the steady state.
 
-
-def Aiyagari(Rate, Wage, economic_params, numerical_params):
+    """
     economic_params["income_mesh"] = economic_params["state_mesh"] * Wage
     old_consumption_grid = (
         economic_params["income_mesh"] + Rate * economic_params["capital_mesh"]
@@ -110,7 +175,7 @@ def Aiyagari(Rate, Wage, economic_params, numerical_params):
     distEG = 1  # Initialize distance
     while distEG > numerical_params["critical_value"]:
         # Update consumption policy by EGM
-        consumption_grid, _ = EGM(
+        consumption_grid, _ = endogenous_grid_method(
             old_consumption_grid,
             1 + Rate,
             1 + Rate,
@@ -127,7 +192,7 @@ def Aiyagari(Rate, Wage, economic_params, numerical_params):
         old_consumption_grid = consumption_grid.copy()  # Replace old policy
 
     # Calculate capital policy
-    _, kprime = EGM(
+    _, kprime = endogenous_grid_method(
         consumption_grid,
         1 + Rate,
         1 + Rate,
@@ -136,7 +201,7 @@ def Aiyagari(Rate, Wage, economic_params, numerical_params):
     )
 
     # Calculate distribution of wealth and aggregate capital
-    Gamma, StDist = Young(kprime, economic_params, numerical_params)
+    Gamma, StDist = young(kprime, economic_params, numerical_params)
     marginal_k = np.sum(
         np.reshape(
             StDist,
@@ -153,7 +218,7 @@ def Aiyagari(Rate, Wage, economic_params, numerical_params):
     return Capital_stock, kprime, marginal_k, StDist, Gamma, consumption_grid
 
 
-def Young(kprime, economic_params, numerical_params):
+def young(kprime, economic_params, numerical_params):
     """This function calculates a transition matrix from policy functions and uses it to
     obtain the stationary distribution of income and wealth. The method used is known as
     Young's method.
@@ -235,18 +300,24 @@ def Young(kprime, economic_params, numerical_params):
     return Gamma, StDist
 
 
-def EGM(consumption_grid, Rate, Rateprime, economic_params, numerical_params):
+def endogenous_grid_method(
+    consumption_grid, Rate, Rateprime, economic_params, numerical_params,
+):
     """This function uses the Endogenous Grid Method (EGM) to solve for the consumption
     and savings decisions of households in a dynamic economic model with incomplete
     markets.
 
     Args:
-    economic_params (dict): A dictionary containing economic parameters such as the discount factor, return rate, borrowing limit, and a transition matrix for employment states.
-    numerical_params (dict): A dictionary containing numerical parameters such as the number of grid points for capital and employment.
+    economic_params (dict): A dictionary containing economic parameters such as the discount factor,
+     return rate, borrowing limit, and a transition matrix for employment states.
+    numerical_params (dict): A dictionary containing numerical parameters such as the number
+     of grid points for capital and employment.
 
     Returns:
-    consumption_grid (numpy.ndarray): A one-dimensional array of length n_points_capital_grid times n_points_income_grid containing the consumption decisions for each combination of capital and income.
-    Kprime (numpy.ndarray): A two-dimensional array with shape (n_points_capital_grid, n_points_income_grid) containing the savings decisions for each combination of capital and income.
+    consumption_grid (numpy.ndarray): A one-dimensional array of length n_points_capital_grid
+     times n_points_income_grid containing the consumption decisions for each combination of capital and income.
+    Kprime (numpy.ndarray): A two-dimensional array with shape (n_points_capital_grid, n_points_income_grid)
+     containing the savings decisions for each combination of capital and income.
 
     """
     # Reshape C to a matrix with shape (nk, nz)
@@ -263,12 +334,10 @@ def EGM(consumption_grid, Rate, Rateprime, economic_params, numerical_params):
     # Calculate expected marginal utility
     expected_mu = mu @ economic_params["transition_mat"].T
 
-    # Calculate cstar(m',z)
     Cstar = get_inverse_marginal_utility(
         economic_params["beta"] * Rateprime * expected_mu,
     )
 
-    # Calculate mstar(m',z)
     Kstar = (
         Cstar + economic_params["capital_mesh"] - economic_params["income_mesh"]
     ) / Rateprime
@@ -286,7 +355,6 @@ def EGM(consumption_grid, Rate, Rateprime, economic_params, numerical_params):
             fill_value="extrapolate",
         )
 
-        # Obtain k'(z,k) by interpolation
         Kprime[:, z] = Savings(economic_params["capital_grid"])
 
         # Check Borrowing Constraint
@@ -302,3 +370,46 @@ def EGM(consumption_grid, Rate, Rateprime, economic_params, numerical_params):
     consumption_grid = consumption_grid.flatten(order="F")
 
     return consumption_grid, Kprime
+
+
+# Vectorized versions are faster than numba or jax. BUT with jax you can generalize it to any Utility F.
+def get_marginal_utility(c, gamma=economic_params["gamma"]):
+    """This function calculates the marginal utility of consumption using the Constant
+    Relative Risk Aversion (CRRA) utility function.
+
+    Args:
+        c (numpy.ndarray or float): Consumption level(s) for which the marginal
+         utility is calculated.
+        gamma (float, optional): The risk aversion parameter for the CRRA utility function.
+         Defaults to economic_params["gamma"].
+
+    Returns:
+        numpy.ndarray or float: The marginal utility of consumption for the given
+         consumption level(s) and risk aversion parameter.
+
+    """
+    if gamma == 1:
+        return 1 / c
+    else:
+        return 1 / (c**gamma)
+
+
+def get_inverse_marginal_utility(mu, gamma=economic_params["gamma"]):
+    """This function calculates the inverse marginal utility of consumption using the
+    Constant Relative Risk Aversion (CRRA) utility function.
+
+    Args:
+        mu (numpy.ndarray or float): Marginal utility level(s) for which the inverse marginal
+         utility is calculated.
+        gamma (float, optional): The risk aversion parameter for the CRRA utility function.
+         Defaults to economic_params["gamma"].
+
+    Returns:
+        numpy.ndarray or float: The inverse marginal utility of consumption for the given marginal
+         utility level(s) and risk aversion parameter.
+
+    """
+    if gamma == 1:
+        return 1 / mu
+    else:
+        return (1 / mu) ** (1 / gamma)

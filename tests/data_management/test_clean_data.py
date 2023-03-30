@@ -3,61 +3,59 @@ import pytest
 from het_agents.data_management.produce_grids import *
 
 
-@pytest.fixture
+@pytest.fixture()
 def numerical_params():
     return {
-        'n_points_capital_grid': 10,
-        'n_points_income_grid': 2,
-        'min_value_capital_grid': 0,
-        'max_value_capital_grid': 10,
-        'critical_value': 1e-5,
-        'time_irfs': 10
+        "n_points_capital_grid": 10,
+        "n_points_income_grid": 2,
+        "min_value_capital_grid": 0,
+        "max_value_capital_grid": 10,
+        "critical_value": 1e-5,
+        "time_irfs": 10,
     }
 
-@pytest.fixture
+
+@pytest.fixture()
 def economic_params(numerical_params):
     return {
-        'beta': 0.95,
-        'alpha': 0.36,
-        'gamma': 4,
-        'delta': 0.1,
-        'rho_Z': 0.75,
-        'productivity': 1,
-        'unemp_benefit': 0,
-        'borrowing_limit': numerical_params['min_value_capital_grid'],
-        'transition_mat': np.array([[3/5, 2/5], [4/90, 86/90]])
+        "beta": 0.95,
+        "alpha": 0.36,
+        "gamma": 4,
+        "delta": 0.1,
+        "rho_Z": 0.75,
+        "productivity": 1,
+        "unemp_benefit": 0,
+        "borrowing_limit": numerical_params["min_value_capital_grid"],
+        "transition_mat": np.array([[3 / 5, 2 / 5], [4 / 90, 86 / 90]]),
     }
 
-def test_get_ergodic_dist(economic_params):
 
-    ergodic_dist = get_ergodic_dist(economic_params['transition_mat'])
+def test_get_ergodic_dist(economic_params):
+    ergodic_dist = get_ergodic_dist(economic_params["transition_mat"])
     assert np.allclose(ergodic_dist, np.array([0.1, 0.9]))
 
 
 def test_get_aggregate_labor(economic_params):
-
-    ergodic_dist = get_ergodic_dist(economic_params['transition_mat'])
+    ergodic_dist = get_ergodic_dist(economic_params["transition_mat"])
     (
         aggregate_labor_sup,
         employed_share,
         unemployed_share,
-    ) = get_aggregate_labor(ergodic_dist, economic_params['productivity'])
+    ) = get_aggregate_labor(ergodic_dist, economic_params["productivity"])
     assert np.isclose(aggregate_labor_sup, 0.9)
     assert np.isclose(employed_share, 0.9)
     assert np.isclose(unemployed_share, 0.1)
 
 
 def test_get_tax_rate(economic_params):
-
     employed_share = 0.5
     unemployed_share = 0.5
     tax_rate = get_tax_rate(
-        economic_params['unemp_benefit'],
+        economic_params["unemp_benefit"],
         employed_share,
         unemployed_share,
     )
     assert np.isclose(tax_rate, 0)
-
 
 
 def test_get_income_grid(numerical_params, economic_params):
@@ -68,48 +66,81 @@ def test_get_income_grid(numerical_params, economic_params):
 
     income_grid = get_income_grid(n_points_z, unemp_benefit, tax_rate, productivity)
 
-    assert isinstance(income_grid, np.ndarray), "The function should return a numpy array"
-    assert income_grid.shape == (n_points_z,), "The shape of the income grid is incorrect"
-    assert np.isclose(income_grid[0], unemp_benefit * productivity), "The first element should be close to unemp_benefit * productivity"
-    assert np.allclose(income_grid[1:], productivity * (1 - tax_rate)), "The remaining elements should be close to productivity * (1 - tax_rate)"
+    assert isinstance(
+        income_grid,
+        np.ndarray,
+    ), "The function should return a numpy array"
+    assert income_grid.shape == (
+        n_points_z,
+    ), "The shape of the income grid is incorrect"
+    assert np.isclose(
+        income_grid[0],
+        unemp_benefit * productivity,
+    ), "The first element should be close to unemp_benefit * productivity"
+    assert np.allclose(
+        income_grid[1:],
+        productivity * (1 - tax_rate),
+    ), "The remaining elements should be close to productivity * (1 - tax_rate)"
 
 
 def test_get_k_grid(numerical_params):
-
     capital_grid = get_k_grid(
         numerical_params["n_points_capital_grid"],
-        numerical_params["max_value_capital_grid"], 
-        numerical_params["min_value_capital_grid"]
-        )
+        numerical_params["max_value_capital_grid"],
+        numerical_params["min_value_capital_grid"],
+    )
 
-    assert isinstance(capital_grid, np.ndarray), "The function should return a numpy array"
-    assert capital_grid.shape == (numerical_params["n_points_capital_grid"],), "The shape of the capital grid is incorrect"
-    assert np.isclose(capital_grid[0], numerical_params["min_value_capital_grid"]), "The first element should be close to min_value_capital_grid"
-    assert np.isclose(capital_grid[-1], numerical_params["max_value_capital_grid"]) or capital_grid[-1] < numerical_params["max_value_capital_grid"], "The last element should be almost equal to or less than max_value_capital_grid"
+    assert isinstance(
+        capital_grid,
+        np.ndarray,
+    ), "The function should return a numpy array"
+    assert capital_grid.shape == (
+        numerical_params["n_points_capital_grid"],
+    ), "The shape of the capital grid is incorrect"
+    assert np.isclose(
+        capital_grid[0],
+        numerical_params["min_value_capital_grid"],
+    ), "The first element should be close to min_value_capital_grid"
+    assert (
+        np.isclose(capital_grid[-1], numerical_params["max_value_capital_grid"])
+        or capital_grid[-1] < numerical_params["max_value_capital_grid"]
+    ), "The last element should be almost equal to or less than max_value_capital_grid"
+
 
 def test_get_meshes(numerical_params, economic_params):
-
     economic_params["tax_rate"] = 0
 
     capital_grid = get_k_grid(
         numerical_params["n_points_capital_grid"],
         numerical_params["max_value_capital_grid"],
-        numerical_params["min_value_capital_grid"]
-        )
+        numerical_params["min_value_capital_grid"],
+    )
 
     income_grid = get_income_grid(
         numerical_params["n_points_income_grid"],
         economic_params["unemp_benefit"],
         economic_params["tax_rate"],
-        economic_params["productivity"]
-        )
+        economic_params["productivity"],
+    )
 
     capital_mesh, income_mesh = get_meshes(capital_grid, income_grid)
 
-    assert isinstance(capital_mesh, np.ndarray), "The capital_mesh should be a numpy array"
-    assert capital_mesh.shape == (numerical_params["n_points_capital_grid"], numerical_params["n_points_income_grid"]), "The shape of the capital_mesh is incorrect"
-    assert isinstance(income_mesh, np.ndarray), "The income_mesh should be a numpy array"
-    assert income_mesh.shape == (numerical_params["n_points_capital_grid"], numerical_params["n_points_income_grid"]), "The shape of the income_mesh is incorrect"
+    assert isinstance(
+        capital_mesh,
+        np.ndarray,
+    ), "The capital_mesh should be a numpy array"
+    assert capital_mesh.shape == (
+        numerical_params["n_points_capital_grid"],
+        numerical_params["n_points_income_grid"],
+    ), "The shape of the capital_mesh is incorrect"
+    assert isinstance(
+        income_mesh,
+        np.ndarray,
+    ), "The income_mesh should be a numpy array"
+    assert income_mesh.shape == (
+        numerical_params["n_points_capital_grid"],
+        numerical_params["n_points_income_grid"],
+    ), "The shape of the income_mesh is incorrect"
 
 
 def test_produce_grids(numerical_params, economic_params):
@@ -117,10 +148,25 @@ def test_produce_grids(numerical_params, economic_params):
 
     # Check if the returned dictionary has the expected keys
     expected_keys = [
-        "beta", "alpha", "gamma", "delta", "rho_Z", "productivity",
-        "unemp_benefit", "borrowing_limit", "transition_mat",
-        "aggregate_labor_sup", "employed_share", "unemployed_share",
-        "tax_rate", "income_grid", "capital_grid", "capital_mesh", "income_mesh"
+        "beta",
+        "alpha",
+        "gamma",
+        "delta",
+        "rho_Z",
+        "productivity",
+        "unemp_benefit",
+        "borrowing_limit",
+        "transition_mat",
+        "aggregate_labor_sup",
+        "employed_share",
+        "unemployed_share",
+        "tax_rate",
+        "income_grid",
+        "capital_grid",
+        "capital_mesh",
+        "income_mesh",
     ]
     for key in expected_keys:
-        assert key in updated_economic_params, f"The key '{key}' is missing from the returned dictionary"
+        assert (
+            key in updated_economic_params
+        ), f"The key '{key}' is missing from the returned dictionary"
