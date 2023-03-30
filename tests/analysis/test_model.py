@@ -1,36 +1,74 @@
-# """Tests for the regression model."""
-
-# import numpy as np
-# import pandas as pd
-# import pytest
-# from het_agents.analysis.model import fit_logit_model
-
-# DESIRED_PRECISION = 10e-2
-
-
-# @pytest.fixture()
-# def data():
-#     np.random.seed(0)
-#     x = np.random.normal(size=100_000)
-#     coef = 2.0
-#     prob = 1 / (1 + np.exp(-coef * x))
-#     return pd.DataFrame(
-#         {"outcome_numerical": np.random.binomial(1, prob), "covariate": x},
-#     )
+import numpy as np
+import pytest
+from het_agents.analysis.model import (
+    benchmark_algorithms_iterations,
+    benchmark_algorithms_time,
+    capital_demand_supply,
+)
+from het_agents.config import TEST_DIR
+from het_agents.utilities import read_pkl
 
 
-# @pytest.fixture()
-# def data_info():
-#     return {"outcome": "outcome", "outcome_numerical": "outcome_numerical"}
+@pytest.fixture()
+def params():
+    numerical_params, economic_params = read_pkl(
+        TEST_DIR / "analysis" / "econ_data_fixture.pkl",
+    )
+    return economic_params, numerical_params
 
 
-# def test_fit_logit_model_recover_coefficients(data, data_info):
-#     model = fit_logit_model(data, data_info, model_type="linear")
-#     params = model.params
-#     assert np.abs(params["Intercept"]) < DESIRED_PRECISION
-#     assert np.abs(params["covariate"] - 2.0) < DESIRED_PRECISION
+def test_capital_demand_supply(params):
+    economic_params, numerical_params = params
+
+    demand_curve, supply_curve = capital_demand_supply(
+        economic_params,
+        numerical_params,
+    )
+    assert isinstance(demand_curve, np.ndarray), "Demand curve should be a numpy array"
+    assert isinstance(supply_curve, np.ndarray), "Supply curve should be a numpy array"
+    assert (
+        demand_curve.shape == supply_curve.shape
+    ), "Demand and supply curves should have the same shape"
 
 
-# def test_fit_logit_model_error_model_type(data, data_info):
-#     with pytest.raises(ValueError):  # noqa: PT011
-#         assert fit_logit_model(data, data_info, model_type="quadratic")
+def test_benchmark_algorithms_iterations(params):
+    economic_params, numerical_params = params
+
+    algorithms = ["scipy_lbfgsb", "scipy_truncated_newton"]
+
+    results = benchmark_algorithms_iterations(
+        algorithms,
+        economic_params,
+        numerical_params,
+    )
+    assert isinstance(results, dict), "Results should be a dictionary"
+    assert len(results) == len(
+        algorithms,
+    ), "Results should have the same length as the list of algorithms"
+    for algo in algorithms:
+        assert algo in results, f"{algo} should be in the results"
+
+
+def test_benchmark_algorithms_time(params):
+    economic_params, numerical_params = params
+
+    algorithms = ["scipy_lbfgsb", "scipy_truncated_newton"]
+
+    num_of_runs = 2
+
+    runtimes = benchmark_algorithms_time(
+        algorithms,
+        economic_params,
+        numerical_params,
+        num_of_runs=num_of_runs,
+    )
+    assert isinstance(runtimes, dict), "Runtimes should be a dictionary"
+    assert len(runtimes) == len(
+        algorithms,
+    ), "Runtimes should have the same length as the list of algorithms"
+    for algo in algorithms:
+        assert algo in runtimes, f"{algo} should be in the runtimes"
+        assert isinstance(
+            runtimes[algo],
+            float,
+        ), f"Runtime for {algo} should be a float"
