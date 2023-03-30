@@ -13,7 +13,9 @@ def produce_grids(numerical_params, economic_params):
     Returns:
         dict: Dictionary containing the updated economic parameters, including the
               employment grid, capital grid, and capital and employment meshes
-              as well as some economic relevant data.
+              as well as some economic relevant variables such as the
+              erdodic distribution, the aggregate labor supply, the share of unemployed
+              and the required tax rate.
 
     """
 
@@ -27,14 +29,15 @@ def produce_grids(numerical_params, economic_params):
             numpy.ndarray: Ergodic distribution of the Markov chain.
 
         """
-        # if the matrix is symmetric return the same matrix
-        
+        if not _is_irreducible(transition_mat):
+            error_message = "The transition matrix is not irreducible."
+            raise ValueError(error_message)
 
-        return np.linalg.matrix_power(transition_mat, 1000)  # TO DO: test this!! Some properties of markov chains so it always converges
+        return np.linalg.matrix_power(transition_mat, 1000)
 
     def get_aggregate_labor(ergodic_dist, productivity):
-
-        """Calculate the aggregate labor supply based on the ergodic distribution and productivity.
+        """Calculate the aggregate labor supply based on the ergodic distribution and
+        productivity.
 
         Args:
             ergodic_dist (numpy.ndarray): Ergodic distribution of the Markov chain.
@@ -57,8 +60,8 @@ def produce_grids(numerical_params, economic_params):
             unemp_benefit (float): Unemployment insurance benefit parameter.
             employed_share (numpy.ndarray): Array of employed share over the states
             of the Markov chain.
-            unemployed_share (numpy.ndarray): Array of unemployed share over the states of
-            the Markov chain.
+            unemployed_share (numpy.ndarray): Array of unemployed share over the states
+            of the Markov chain.
 
         Returns:
             float: Tax rate required to finance the unemployment insurance benefits.
@@ -90,20 +93,17 @@ def produce_grids(numerical_params, economic_params):
         """Calculates the capital grid.
 
         Args:
-        - n_points_k (int): The number of points on the capital grid.
-        - max_k (float): The maximum value of capital.
-        - min_k (float): The minimum value of capital.
+            n_points_k (int): Number of points on the capital grid.
+            max_k (float): Maximum value of capital.
+            min_k (float): Minimum value of capital.
 
         Returns:
-        - The capital grid.
+            numpy.ndarray: Array of capital grid points.
 
-        """ 
-        return (
-            np.exp(np.linspace(0, np.log(max_k - min_k + 1), n_points_k)) - 1 + min_k
-        )
+        """
+        return np.exp(np.linspace(0, np.log(max_k - min_k + 1), n_points_k)) - 1 + min_k
 
     def get_meshes(capital_grid, income_grid):
-
         """Creates two two-dimensional arrays representing a meshgrid of the given one-
         dimensional arrays.
 
@@ -167,4 +167,9 @@ def produce_grids(numerical_params, economic_params):
     economic_params["income_mesh"] = income_mesh
 
     return economic_params
-    # TODO: TESTs
+
+
+def _is_irreducible(transition_mat):
+    """Check if the Markov chain represented by the transition matrix is irreducible."""
+    num_zeros = np.sum(transition_mat == 0, axis=0)
+    return not np.any(num_zeros == transition_mat.shape[0])
