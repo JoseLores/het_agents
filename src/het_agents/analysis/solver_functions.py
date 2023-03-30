@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 def excess_demand(capital, economic_params, numerical_params):
     """This function calculates the difference between the equilibrium capital demand
     and the given capital stock. The equilibrium capital demand is calculated using the
-    function aiyagari() with inputs that depend on the given capital stock. 
+    function aiyagari() with inputs that depend on the given capital stock.
 
     Args:
     capital (float): the given capital stock

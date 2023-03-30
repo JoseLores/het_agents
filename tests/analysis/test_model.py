@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from het_agents.analysis.model import (
+from het_agents.analysis.benchmark import (
     benchmark_algorithms_iterations,
     benchmark_algorithms_time,
     capital_demand_supply,

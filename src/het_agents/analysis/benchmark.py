@@ -1,11 +1,15 @@
-"""Functions for obtaining model solving steady state results."""
+"""Functions for obtaining model's data after solving steady state results.
+
+Part of this file benchmarks iterations and time from different scipy algorithms.
+
+"""
 
 import timeit
 
 import estimagic as em
 import numpy as np
 
-from het_agents.solver_functions import *
+from het_agents.analysis.solver_functions import *
 
 
 def capital_demand_supply(economic_params, numerical_params):
@@ -85,7 +89,7 @@ def benchmark_algorithms_time(
         economic_params (dict): A dictionary containing economic parameters.
         numerical_params (dict): A dictionary containing numerical parameters.
 
-    Returns: 
+    Returns:
         dict: A dictionary containing the average runtime of the benchmark for each solver.
 
     """

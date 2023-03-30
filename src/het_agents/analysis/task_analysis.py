@@ -2,20 +2,20 @@
 
 import pytask
 
-from het_agents.analysis.model import (
+from het_agents.analysis.benchmark import (
     benchmark_algorithms_iterations,
     benchmark_algorithms_time,
     capital_demand_supply,
 )
+from het_agents.analysis.solver_functions import rate, solve_steady_state
 from het_agents.config import ALGORITHMS, BLD, MODELS
-from het_agents.solver_functions import rate, solve_steady_state
 from het_agents.utilities import read_pkl, to_pkl
 
 for model in MODELS:
 
     @pytask.mark.depends_on(
         {
-            "script": ["model.py"],
+            "script": ["benchmark.py"],
             "data": BLD / "python" / "data" / f"econ_data_{model}_mkt.pkl",
         },
     )
@@ -32,7 +32,7 @@ for model in MODELS:
             steady_state_results["aggregate_capital"],
             economic_params,
             numerical_params,
-        ) 
+        )
 
         (
             data_for_plots["demand_curve"],
