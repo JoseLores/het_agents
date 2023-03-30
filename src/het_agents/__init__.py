@@ -1,1 +1,1 @@
-"""Code for producing the results of the Solve Heterogeneous Agents  project."""
+s"""Code for producing the results of the Solve Heterogeneous Agents project."""

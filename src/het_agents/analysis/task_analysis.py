@@ -11,8 +11,8 @@ from het_agents.utilities import read_yaml
 
 @pytask.mark.depends_on(
     {
-        "scripts": ["model.py", "predict.py"],
-        "data": BLD / "python" / "data" / "data_clean.csv",
+        "scripts": ["solve_steady.py", "predict.py"],
+        "data": BLD / "python" / "data" / f"econ_data_{model}_mkt.pkl",
         "data_info": SRC / "data_management" / "data_info.yaml",
     },
 )
