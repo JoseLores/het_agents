@@ -18,8 +18,18 @@ To build the project, type
 $ pytask
 ```
 
+## Description
+
+Package to obtain the steady state of heterogeneous agents problems with different
+numbers of income states and saving constraints. The model can include linear taxation
+to subsidize unemployment (which is the lowest-income state). The package can solve
+incomplete market problems by setting interest rate bounds.
+
 ## Credits
 
 This project was created with [cookiecutter](https://github.com/audreyr/cookiecutter)
 and the
 [econ-project-templates](https://github.com/OpenSourceEconomics/econ-project-templates).
+It makes a heavy use of:
+
+[Estimagic](https://github.com/OpenSourceEconomics/estimagic).
