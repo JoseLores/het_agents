@@ -52,4 +52,8 @@ for model in MODELS:
             numerical_params,
         )
 
+        data_for_plots["number_income_states"] = numerical_params[
+            "n_points_income_grid"
+        ]
+
         to_pkl(steady_state_results, data_for_plots, produces["results"])

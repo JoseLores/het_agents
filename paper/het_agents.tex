@@ -1,65 +1,42 @@
-\documentclass[11pt, a4paper, leqno]{article}
-\usepackage{a4wide}
-\usepackage[T1]{fontenc}
+\documentclass[a4paper,12pt]{article}
+\usepackage[margin=1in]{geometry}
 \usepackage[utf8]{inputenc}
-\usepackage{float, afterpage, rotating, graphicx}
-\usepackage{epstopdf}
-\usepackage{longtable, booktabs, tabularx}
-\usepackage{fancyvrb, moreverb, relsize}
-\usepackage{eurosym, calc}
-% \usepackage{chngcntr}
-\usepackage{amsmath, amssymb, amsfonts, amsthm, bm}
-\usepackage{caption}
-\usepackage{mdwlist}
-\usepackage{xfrac}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{verbatim}
 \usepackage{setspace}
-\usepackage[dvipsnames]{xcolor}
+\spacing{1.5}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{dcolumn}
+\usepackage{indentfirst}
+%\usepackage{subfigure}
+\usepackage[titletoc,title]{appendix}
+\usepackage{apacite}
+\usepackage{natbib}
+\setcitestyle{aysep={}} %remove comma between author and year when using citep{}.
+\usepackage{color}
+\usepackage{longtable}
+\usepackage{lscape}
+\usepackage{pdflscape}
+\usepackage{caption}
 \usepackage{subcaption}
-\usepackage{minibox}
-% \usepackage{pdf14} % Enable for Manuscriptcentral -- can't handle pdf 1.5
-% \usepackage{endfloat} % Enable to move tables / figures to the end. Useful for some
-% submissions.
-
-\usepackage[
-    natbib=true,
-    bibencoding=inputenc,
-    bibstyle=authoryear-ibid,
-    citestyle=authoryear-comp,
-    maxcitenames=3,
-    maxbibnames=10,
-    useprefix=false,
-    sortcites=true,
-    backend=biber
-]{biblatex}
-\AtBeginDocument{\toggletrue{blx@useprefix}}
-\AtBeginBibliography{\togglefalse{blx@useprefix}}
-\setlength{\bibitemsep}{1.5ex}
-\addbibresource{../../paper/refs.bib}
-
-\usepackage[unicode=true]{hyperref}
+\graphicspath{{../../Output/Figures/}}
+\newcommand{\annote}[1]{\parbox{\textwidth}{\renewcommand{\baselinestretch}{1.0}\vspace{12pt} \footnotesize Notes: #1}}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+\usepackage{libertine}
+\usepackage{hyperref}
 \hypersetup{
-    colorlinks=true,
-    linkcolor=black,
-    anchorcolor=black,
-    citecolor=NavyBlue,
-    filecolor=black,
-    menucolor=black,
-    runcolor=black,
-    urlcolor=NavyBlue
+     colorlinks   = true,
+     urlcolor	  = black,
+     citecolor    = purple,
+     linkcolor 	  = black
 }
-
-
-\widowpenalty=10000
-\clubpenalty=10000
-
-\setlength{\parskip}{1ex}
-\setlength{\parindent}{0ex}
-\setstretch{1.5}
-
-
 \begin{document}
 
-\title{Solve Heterogeneous Agents \thanks{Jose Lores Diz, University of Bonn. Email: \href{mailto:ldpepe99@gmail.com}{\nolinkurl{ldpepe99 [at] gmail [dot] com}}.}}
+\title{Solve Steady State for Heterogeneous Agents Models \thanks{Jose Lores Diz, University of Bonn. Email: \href{mailto:ldpepe99@gmail.com}{\nolinkurl{ldpepe99 [at] gmail [dot] com}}.}}
 
 \author{Jose Lores Diz}
 
@@ -73,66 +50,90 @@
 
 
 \begin{abstract}
-    Some abstract here.
+I employ various numerical methods seen in classes at University of Bonn, such as the endogenous grid method \cite{carroll2006} and Young's \cite{young2015} method, to solve for the steady state of two heterogeneous agents models. The models are both inspired in \citet{aiyagari1994} but differ on their income processes, market structures and saving constrains (in one agents can get indebted up to some point).
+
+I systematically analyze the behavior of the supply and demand curves for funds and the impact of interest rates on the wealth distribution. To this end, I develop a suite of visualization tools that display the supply and demand curves, Lorenz curves, and wealth distributions.
+
+In addition to comparing the performance of different numerical methods, we also explore the sensitivity of the model to parameter changes. Throughout the project, I emphasize the importance of robustness and reproducibility, incorporating test-driven development and version control for efficient and accurate implementation. The project set up follows \cite{GaudeckerEconProjectTemplates} and makes a heavy use of \cite{numpy} and \cite{estimagic}.
 \end{abstract}
 
 \clearpage
 
 
-\section{Introduction} % (fold)
-\label{sec:introduction}
+\section{Benchmarking algorithms with estimagic.} % (fold)
+\label{1}
 
-If you are using this template, please cite this item from the references:
-\citet{GaudeckerEconProjectTemplates}.
+\begin{figure}[htbp]
+    \centering
+        \includegraphics[width=0.7\textwidth]{../bld/python/figures/run_time_plot.png}
+        \caption{Average run time of each solver.}
+        \label{fig:1}
+\end{figure}
 
-The data set for the example project is taken from
-\url{https://www.stem.org.uk/resources/elibrary/resource/28452/large-datasets-stats4schools}.
-It contains data on smoking habits in the UK, with 1691 observations and 12 variables.
-We consider only 4 of the 12 features for the prediction of the variable
-\texttt{smoking}: \texttt{marital\_status}, \texttt{highest\_qualification},
-\texttt{gender} and \texttt{age}. We model the dependence using a Logistic model. All
-numerical features are included linearly, while categorical features are expanded into
-dummy variables. Figures below illustrate the model predictions over the lifetime. You
-will find one figure and one estimation summary table for each installed programming
-language.
+\vspace{1cm}
+
+\begin{figure}[htbp]
+        \centering
+        \includegraphics[width=0.7\textwidth]{../bld/python/figures/iterations_plot.png}
+        \caption{Equilibrium of the capital markets in the standard model (no incomplete markets).}
+        \label{fig:2}
+\end{figure}
 
 
+\clearpage
 
-\begin{figure}[H]
+\section{Models equilibrium.} % (fold)
+
+\begin{figure}[htbp]
+        \centering
+        \includegraphics[width=0.7\textwidth]{../bld/python/figures/incomplete_supply_demand_plot.png}
+        \label{fig:3}
+        \caption{Incomplete markets, solver finds the equilibrium in a bound.}
+\end{figure}
+
+\vspace{1cm}
+
+\begin{figure}[htbp]
+        \centering
+        \includegraphics[width=0.7\textwidth]{../bld/python/figures/standard_supply_demand_plot.png}
+        \caption{Number of iterations that each solver needs.}
+        \label{fig:4}
+\end{figure}
+
+\clearpage
+
+\section{Standard model distributions with five income states.}
+
+\begin{figure}[h]
 
     \centering
-    \includegraphics[width=0.85\textwidth]{../python/figures/smoking_by_marital_status}
+    \includegraphics[width=0.7\textwidth]{../bld/python/figures/wealth_distrib_plot.png}
 
-    \caption{\emph{Python:} Model predictions of the smoking probability over the
-        lifetime. Each colored line represents a case where marital status is fixed to one
-        of the values present in the data set.}
-    \label{fig:python-predictions}
+    \caption{\emph{Wealth distribution in the steady state:}  from the model with standard markets and allowing agents to get indebted. }
+    \label{fig:5}
+
+\end{figure}
+
+\vspace{1cm}
+
+\begin{figure}[h]
+
+    \centering
+    \includegraphics[width=0.7\textwidth]{../bld/python/figures/lorenz_plot.png}
+
+    \caption{\emph{Lorenz Curve} }
+    \label{fig:6}
 
 \end{figure}
 
 
-\begin{table}[!h]
-    \input{../python/tables/estimation_results.tex}
-    \caption{\label{tab:python-summary}\emph{Python:} Estimation results of the
-        linear Logistic regression.}
-\end{table}
+\clearpage
+
+\bibliographystyle{apacite}
+\begin{singlespace}
+\bibliography{refs}
+\end{singlespace}
 
 
-
-
-% section introduction (end)
-
-
-
-\setstretch{1}
-\printbibliography
-\setstretch{1.5}
-
-
-% \appendix
-
-% The chngctr package is needed for the following lines.
-% \counterwithin{table}{section}
-% \counterwithin{figure}{section}
 
 \end{document}

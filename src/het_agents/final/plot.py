@@ -1,8 +1,8 @@
 """Functions plotting results."""
 
-import plotly.graph_objects as go
 import estimagic as em
 import numpy as np
+import plotly.graph_objects as go
 
 
 def plot_supply_demand_curves(supply_curve, demand_curve):
@@ -22,12 +22,18 @@ def plot_supply_demand_curves(supply_curve, demand_curve):
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=supply_curve, y=interest_rate_range, mode="lines", name="Supply of Funds",
+            x=supply_curve,
+            y=interest_rate_range,
+            mode="lines",
+            name="Supply of Funds",
         ),
     )
     fig.add_trace(
         go.Scatter(
-            x=demand_curve, y=interest_rate_range, mode="lines", name="Demand for Funds",
+            x=demand_curve,
+            y=interest_rate_range,
+            mode="lines",
+            name="Demand for Funds",
         ),
     )
 
@@ -45,7 +51,7 @@ def plot_supply_demand_curves(supply_curve, demand_curve):
     return fig
 
 
-def plot_criterion_iterations(results, max_evaulations=30):
+def plot_criterion_iterations(results):
     """This function generates a plot of the criterion value across iterations for
     different optimization algorithms using the estimagic criterion plot function. The
     plot is limited to a specified number of evaluations.
@@ -62,7 +68,7 @@ def plot_criterion_iterations(results, max_evaulations=30):
             maximum number of evaluations.
 
     """
-    fig = em.criterion_plot(results, max_evaulations, monotone=True)
+    fig = em.criterion_plot(results, max_evaluations=25, monotone=True)
 
     return fig
 
@@ -98,53 +104,53 @@ def plot_run_times(runtimes):
     return fig
 
 
-def plot_wealth_distribution(StDist, n_bins=5):
+def plot_wealth_distribution(capital_grid, marginal_capital, n_bins=30):
     """This function generates a bar chart of the wealth distribution using the Plotly
     library.
 
     Args:
-        StDist (numpy.ndarray): A one-dimensional array representing the stationary distribution of income and wealth.
+        capital_grid (numpy.ndarray): A one-dimensional array representing the capital grid.
+        marginal_capital (numpy.ndarray): A one-dimensional array representing the marginal capital distribution.
         n_bins (int): The number of bins to divide the population.
 
     Returns:
         fig (plotly.graph_objs.Figure): A plotly Figure object containing the bar chart of the wealth distribution.
 
     """
-    StDist_percent = StDist * 100
-    bin_size = len(StDist) // n_bins
-    wealth_distribution = [
-        np.sum(StDist_percent[i * bin_size : (i + 1) * bin_size]) for i in range(n_bins)
-    ]
+    total_wealth = capital_grid * marginal_capital
+    bin_counts, bin_edges = np.histogram(
+        capital_grid, bins=n_bins, weights=total_wealth,
+    )
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=list(range(1, n_bins + 1)), y=wealth_distribution))
+    fig.add_trace(go.Bar(x=bin_centers, y=bin_counts))
 
     fig.update_layout(
-        title="Wealth Distribution",
-        xaxis={"title": f"Wealth Percentile ({100/n_binds}% bins)"},
-        yaxis={"title": "Percentage of Total Wealth"},
+        title="Distribution of Asset Holdings",
+        xaxis={"title": "Capital Grid"},
+        yaxis={"title": "Marginal Capital"},
         plot_bgcolor="rgba(255, 255, 255, 1)",
     )
 
     return fig
 
 
-def plot_lorenz_curve(StDist, n_bins=5):
+# TODO: lorenz curve goes above 45-degree line-> fix it
+def plot_lorenz_curve(capital_grid, marginal_capital):
     """This function generates a Lorenz curve using the Plotly library.
 
     Args:
-        StDist (numpy.ndarray): A one-dimensional array representing the stationary distribution of income and wealth.
-        n_bins (int): The number of bins to divide the population.
+        capital_grid (numpy.ndarray): A one-dimensional array representing the capital grid.
+        marginal_capital (numpy.ndarray): A one-dimensional array representing the marginal capital distribution.
 
     Returns:
         fig (plotly.graph_objs.Figure): A plotly Figure object containing the Lorenz curve.
 
     """
-    bin_size = len(StDist) // n_bins
-    cumulative_wealth = np.array(
-        [np.sum(StDist[: (i + 1) * bin_size]) for i in range(n_bins)],
-    )
-    cumulative_population = np.linspace(0, 1, n_bins)
+    total_wealth = capital_grid * marginal_capital
+    cumulative_population = np.linspace(0, 1, len(capital_grid))
+    cumulative_wealth = np.cumsum(total_wealth) / np.sum(total_wealth)
 
     fig = go.Figure()
 

@@ -94,10 +94,10 @@ def solve_steady_state(economic_params, numerical_params, algorithm="scipy_lbfgs
     """
     res = em.minimize(
         criterion=abs_excess_demand,
-        params=4,
+        params=2,
         algorithm=algorithm,
         lower_bounds=float(
-            capital_demand(0.052, economic_params, numerical_params),
+            capital_demand(0.045, economic_params, numerical_params),
         ),  # recall incomplete markets -> solution will be a bound
         upper_bounds=float(
             capital_demand(-0.01, economic_params, numerical_params),
