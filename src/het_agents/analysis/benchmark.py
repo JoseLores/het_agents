@@ -9,7 +9,11 @@ import timeit
 import estimagic as em
 import numpy as np
 
-from het_agents.analysis.solver_functions import *
+from het_agents.analysis.solver_functions import (
+    capital_demand,
+    excess_demand,
+    solve_steady_state,
+)
 
 
 def capital_demand_supply(economic_params, numerical_params):
@@ -27,7 +31,7 @@ def capital_demand_supply(economic_params, numerical_params):
     """
     rgrid = np.arange(
         -0.01,
-        0.055,
+        0.04,
         0.0025,
     )  # TODO: should this be an interval (+-r_star)?
     demand_curve = np.array(
@@ -78,7 +82,7 @@ def benchmark_algorithms_time(
     algorithms,
     economic_params,
     numerical_params,
-    num_of_runs=50,
+    num_of_runs=5,
 ):
     """Run the benchmark for a list of optimization solvers for the steady-state
     solution using the solve_steady_state function and record the average runtime.

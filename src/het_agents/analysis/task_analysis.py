@@ -12,15 +12,14 @@ from het_agents.config import ALGORITHMS, BLD, MODELS
 from het_agents.utilities import read_pkl, to_pkl
 
 for model in MODELS:
+    depends_on = {"data": BLD / "python" / "data" / f"econ_data_{model}_mkt.pkl"}
+    produces = {"results": BLD / "python" / "models" / f"results_{model}_mkt.pkl"}
 
-    @pytask.mark.depends_on(
-        {
-            "script": ["benchmark.py"],
-            "data": BLD / "python" / "data" / f"econ_data_{model}_mkt.pkl",
-        },
+    @pytask.mark.task(
+        id=model,
+        kwargs={"model": model, "depends_on": depends_on, "produces": produces},
     )
-    @pytask.mark.produces(BLD / "python" / "models" / f"results_{model}_mkt.pkl")
-    def task_get_model_results_python(depends_on, produces):
+    def task_get_model_results_python(depends_on, model, produces):
         """Get quantitative data of the model (Python version)."""
         data_for_plots = {}
 
@@ -53,4 +52,4 @@ for model in MODELS:
             numerical_params,
         )
 
-        to_pkl(steady_state_results, data_for_plots, produces)
+        to_pkl(steady_state_results, data_for_plots, produces["results"])

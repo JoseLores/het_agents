@@ -23,7 +23,7 @@ def economic_params(numerical_params):
         "gamma": 4,
         "delta": 0.1,
         "rho_Z": 0.75,
-        "productivity": 1,
+        "productivity": np.array([1, 1]),
         "unemp_benefit": 0,
         "borrowing_limit": numerical_params["min_value_capital_grid"],
         "transition_mat": np.array([[3 / 5, 2 / 5], [4 / 90, 86 / 90]]),
@@ -48,12 +48,13 @@ def test_get_aggregate_labor(economic_params):
 
 
 def test_get_tax_rate(economic_params):
-    employed_share = 0.5
-    unemployed_share = 0.5
+    unemployed_share = 0.1
+    ergodic_dist = np.array([0.1, 0.9])
     tax_rate = get_tax_rate(
         economic_params["unemp_benefit"],
-        employed_share,
         unemployed_share,
+        ergodic_dist,
+        economic_params["productivity"],
     )
     assert np.isclose(tax_rate, 0)
 
@@ -75,11 +76,11 @@ def test_get_state_grid(numerical_params, economic_params):
     ), "The shape of the income grid is incorrect"
     assert np.isclose(
         state_grid[0],
-        unemp_benefit * productivity,
+        unemp_benefit,
     ), "The first element should be close to unemp_benefit * productivity"
     assert np.allclose(
         state_grid[1:],
-        productivity * (1 - tax_rate),
+        productivity[1:] * (1 - tax_rate),
     ), "The remaining elements should be close to productivity * (1 - tax_rate)"
 
 

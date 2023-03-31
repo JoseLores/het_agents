@@ -13,30 +13,27 @@ from het_agents.final.plot import (
 from het_agents.utilities import read_pkl
 
 for model in MODELS:
+    depends_on = {
+        "script": ["plot.py"],
+        "data": BLD / "python" / "models" / f"results_{model}_mkt.pkl",
+    }
+    produces = {
+        f"{model}_supply_demand_plot": BLD
+        / "python"
+        / "figures"
+        / f"{model}_supply_demand_plot.png",
+        f"{model}_wealth_distrib_plot": BLD
+        / "python"
+        / "figures"
+        / f"{model}_wealth_distrib_plot.png",
+        f"{model}_lorenz_plot": BLD / "python" / "figures" / f"{model}_lorenz_plot.png",
+    }
 
-    @pytask.mark.depends_on(
-        {
-            "script": ["plot.py"],
-            "data": BLD / "python" / "data" / f"results_{model}_mkt.pkl",
-        },
+    @pytask.mark.task(
+        id=model,
+        kwargs={"model": model, "depends_on": depends_on, "produces": produces},
     )
-    @pytask.mark.produces(
-        {
-            f"{model}_supply_demand_plot": BLD
-            / "python"
-            / "figures"
-            / f"{model}_supply_demand_plot.png",
-            f"{model}_wealth_distrib_plot": BLD
-            / "python"
-            / "figures"
-            / f"{model}_wealth_distrib_plot.png",
-            f"{model}_lorenz_plot": BLD
-            / "python"
-            / "figures"
-            / f"{model}_lorenz_plot.png",
-        },
-    )
-    def task_plot_economy_python(depends_on, produces):
+    def task_plot_economy_python(depends_on, model, produces):
         """Plot the capital markets allocation in the steady state (Python version)."""
         data_for_plots, steady_state_results = read_pkl(depends_on["data"])
 
@@ -59,7 +56,7 @@ for model in MODELS:
 @pytask.mark.depends_on(
     {
         "script": ["plot.py"],
-        "data": BLD / "python" / "data" / "results_standard_mkt.pkl",
+        "data": BLD / "python" / "models" / "results_standard_mkt.pkl",
     },
 )
 @pytask.mark.produces(

@@ -1,65 +1,34 @@
 """Functions plotting results."""
 
-import numpy as np
 import plotly.graph_objects as go
+import estimagic as em
+import numpy as np
 
 
-def plot_supply_demand_curves(supply_curve, demand_curve, equilibrium_rate):
-    """Plots the supply and demand curves for funds with the equilibrium interest rate.
+def plot_supply_demand_curves(supply_curve, demand_curve):
+    """Plots the supply and demand curves for funds.
 
     Args:
         supply_curve (numpy.ndarray): The supply of funds curve.
         demand_curve (numpy.ndarray): The demand for funds curve.
-        equilibrium_rate (float): The equilibrium interest rate.
     Outputs:
         fig (plotly.graph_objects.Figure): the figure to be saved.
 
     """
-    # Create a range of interest rates for the x-axis based on the equilibrium rate
-    interest_rate_range = np.linspace(
-        equilibrium_rate - 0.03,
-        equilibrium_rate + 0.03,
-        len(supply_curve),
-    )
+    # Create a range of interest rates for the x-axis from -0.01 to 0.052
+    interest_rate_range = np.linspace(-0.01, 0.04, len(supply_curve))
 
     # Create a plotly figure
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=supply_curve,
-            y=interest_rate_range,
-            mode="lines",
-            name="Supply of Funds",
+            x=supply_curve, y=interest_rate_range, mode="lines", name="Supply of Funds",
         ),
     )
     fig.add_trace(
         go.Scatter(
-            x=demand_curve,
-            y=interest_rate_range,
-            mode="lines",
-            name="Demand for Funds",
+            x=demand_curve, y=interest_rate_range, mode="lines", name="Demand for Funds",
         ),
-    )
-
-    # Add equilibrium interest rate to the figure
-    fig.add_shape(
-        type="line",
-        x0=0,
-        x1=1,
-        y0=equilibrium_rate,
-        y1=equilibrium_rate,
-        yref="y",
-        xref="paper",
-        line={"color": "Green", "width": 2, "dash": "dash"},
-    )
-    fig.add_annotation(
-        text=f"Equilibrium Rate: {equilibrium_rate:.4f}",
-        xref="paper",
-        yref="y",
-        x=0.98,
-        y=equilibrium_rate,
-        showarrow=False,
-        font={"size": 12},
     )
 
     # Set labels for the plot

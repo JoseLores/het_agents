@@ -5,6 +5,24 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
+def abs_excess_demand(capital, economic_params, numerical_params):
+    """This function calculates the absolute value of the difference between the
+    equilibrium capital demand and the given capital stock. The equilibrium capital
+    demand is calculated using the function aiyagari() with inputs that depend on the
+    given capital stock.
+
+    Args:
+    capital (float): the given capital stock
+
+    Returns:
+    abs(eq_capital_demand - capital) (float): the absolute value of the difference between the equilibrium capital
+    demand and the given capital stock.
+
+    """
+    excess_demand_value = excess_demand(capital, economic_params, numerical_params)
+    return abs(excess_demand_value)
+
+
 def excess_demand(capital, economic_params, numerical_params):
     """This function calculates the difference between the equilibrium capital demand
     and the given capital stock. The equilibrium capital demand is calculated using the
@@ -75,7 +93,7 @@ def solve_steady_state(economic_params, numerical_params, algorithm="scipy_lbfgs
 
     """
     res = em.minimize(
-        criterion=excess_demand,
+        criterion=abs_excess_demand,
         params=4,
         algorithm=algorithm,
         lower_bounds=float(

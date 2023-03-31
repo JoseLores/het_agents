@@ -27,8 +27,9 @@ def produce_grids(economic_params, numerical_params):
 
     tax_rate = get_tax_rate(
         economic_params["unemp_benefit"],
-        employed_share,
         unemployed_share,
+        ergodic_dist,
+        economic_params["productivity"],
     )
 
     state_grid = get_state_grid(
@@ -83,7 +84,7 @@ def get_aggregate_labor(ergodic_dist, productivity):
 
     Args:
         ergodic_dist (numpy.ndarray): Ergodic distribution of the Markov chain.
-        productivity (float): Labor productivity parameter.
+        productivity (array): Labor productivity parameter.
 
     Returns:
         tuple: Tuple containing the aggregate labor supply, employed share, and
@@ -91,12 +92,12 @@ def get_aggregate_labor(ergodic_dist, productivity):
 
     """
     employed_share = ergodic_dist[1:].sum().round(5)
-    aggregate_labor_sup = np.sum(employed_share) * productivity
+    aggregate_labor_sup = np.dot(ergodic_dist[1:], productivity[1:])
     unemployed_share = 1 - employed_share
     return aggregate_labor_sup, employed_share, unemployed_share
 
 
-def get_tax_rate(unemp_benefit, employed_share, unemployed_share):
+def get_tax_rate(unemp_benefit, unemployed_share, ergodic_dist, productivity):
     """Calculate the tax rate required to finance unemployment insurance benefits.
 
     Args:
@@ -105,13 +106,15 @@ def get_tax_rate(unemp_benefit, employed_share, unemployed_share):
         of the Markov chain.
         unemployed_share (numpy.ndarray): Array of unemployed share over the states
         of the Markov chain.
+        ergodic_dist (numpy.ndarray): Ergodic distribution of the Markov chain.
+        productivity (array): Labor productivity parameters.
 
     Returns:
         float: Tax rate required to finance the unemployment insurance benefits.
 
     """
     # tax rate to finance UIB.
-    return unemp_benefit * unemployed_share / employed_share
+    return unemp_benefit * unemployed_share / np.dot(ergodic_dist[1:], productivity[1:])
 
 
 def get_state_grid(n_points_z, unemp_benefit, tax_rate, productivity):
@@ -122,15 +125,15 @@ def get_state_grid(n_points_z, unemp_benefit, tax_rate, productivity):
         unemp_benefit (float): Unemployment insurance benefit parameter.
         tax_rate (float): Tax rate required to finance the unemployment insurance
         benefits.
-        productivity (float): Labor productivity parameter.
+        productivity (array): Labor productivity array.
 
     Returns:
         numpy.ndarray: Array of employment grid points.
 
     """
     state_grid = np.zeros(n_points_z)
-    state_grid[0] = unemp_benefit * productivity
-    state_grid[1:] = productivity * (1 - tax_rate)
+    state_grid[0] = unemp_benefit
+    state_grid[1:] = productivity[1:] * (1 - tax_rate)
     return state_grid
 
 
