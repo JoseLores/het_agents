@@ -6,9 +6,9 @@ import pickle
 # TODO: Generalize functions for N dicts
 def read_pkl(filename):
     with open(filename, "rb") as f:
-        numerical_params = pickle.load(f)
-        economic_params = pickle.load(f)
-    return numerical_params, economic_params
+        dict1 = pickle.load(f)
+        dict2 = pickle.load(f)
+    return dict1, dict2
 
 
 def to_pkl(dict1, dict2, filename):
